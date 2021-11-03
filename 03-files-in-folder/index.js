@@ -16,7 +16,7 @@ function seekFile(pathToFiles) {
                 } else {
                     if (stats.isDirectory()) {
                         return seekFile(path.join(__dirname, `secret-folder/${file}/`));
-                    } if (!stats.isDirectory()) {
+                    } if (!stats.isDirectory() && stats.size !== 0) {
                         const name = file.replace(/\.[^/.]+$/, "");
                         const extension = path.extname(file).slice(1);
                         console.log(`${name} - ${extension} - ${stats.size / 1000}kb`);
