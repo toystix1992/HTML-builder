@@ -14,11 +14,11 @@ function seekFile(pathToFiles) {
                 if (err) {
                     console.log(`File doesn't exist.`);
                 } else {
-                    if(stats.isDirectory()) {
+                    if (stats.isDirectory()) {
                         return seekFile(path.join(__dirname, `secret-folder/${file}/`));
-                    } if(!stats.isDirectory()) {
+                    } if (!stats.isDirectory()) {
                         const name = file.replace(/\.[^/.]+$/, "");
-                        const extension = file.replace(/\.(.+)$/, "");
+                        const extension = path.extname(file).slice(1);
                         console.log(`${name} - ${extension} - ${stats.size / 1000}kb`);
                     }
                 }
