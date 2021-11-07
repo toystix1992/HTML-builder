@@ -1,5 +1,7 @@
+const { readdir, readFile, writeFile } = require('fs/promises');
 const path = require('path');
 const fs = require('fs');
+
 
 const pathToReadCssFiles = path.join(__dirname, 'styles/');
 const pathToReadHtmlComponentsFiles = path.join(__dirname, 'components/');
@@ -7,7 +9,8 @@ const pathToReadHtmlTemplateFiles = path.join(__dirname, 'template.html');
 const pathToReadAssetsFiles = path.join(__dirname, 'assets/');
 const pathToWriteCssFiles = path.join(__dirname, 'project-dist/');
 const pathToWriteAssetsFiles = path.join(__dirname, 'project-dist/assets/');
-const writeableStream = fs.createWriteStream(`${pathToWriteCssFiles}style.css`);
+const writeableStreamCss = fs.createWriteStream(`${pathToWriteCssFiles}style.css`);
+
 
 fs.mkdir(pathToWriteCssFiles, { recursive: true }, err => {
     if (err) throw err;
@@ -25,7 +28,7 @@ function makeCssBundle() {
             const extension = path.extname(file).slice(1);
             if (extension === 'css') {
                 let readableStream = fs.createReadStream(`${pathToReadCssFiles}${file}`, "utf8");
-                readableStream.pipe(writeableStream);
+                readableStream.pipe(writeableStreamCss);
             }
         });
     });
@@ -51,7 +54,10 @@ const copyAssetsDirectory = (pathToReadAssetsFiles, pathToWriteAssetsFiles) => {
                     }
                     fs.copyFile(`${pathToReadAssetsFiles}${file}`,
                         `${pathToWriteAssetsFiles}${file}`, (err) => {
-                            if (err) throw err;
+                            if (err) {
+                                console.log('assets');
+                                throw err;
+                            }
                             console.log('Asset file was copied');
                         });
                 }
@@ -61,28 +67,25 @@ const copyAssetsDirectory = (pathToReadAssetsFiles, pathToWriteAssetsFiles) => {
     );
 };
 
-function makeHtmlBundle() {
-    fs.copyFile(pathToReadHtmlTemplateFiles,
-    `${pathToWriteCssFiles}index.html`, (err) => {
-        if (err) throw err;
-        console.log('Template file was copied');
-    });
-    writebleStreamMain = fs.createWriteStream()
-    fs.readdir(pathToReadHtmlComponentsFiles, (err, files) => {
-        if (err) {
-            console.error(err);
-            return;
-        }
-        files.forEach(file => {
-            console.log(file);
-            let readableStreamComponents = fs.createReadStream(`${pathToReadHtmlComponentsFiles}${file}`, "utf8");
-            readableStreamComponents.pipe(`${pathToWriteCssFiles}index.html`);
-        });
-    });
 
-    // const readableStreamIndexHtml = fs.createReadStream(`${pathToWriteCssFiles}index.html`, "utf8");
-    // readableStreamIndexHtml.on('data', function (chunk) {
-    // });
+
+async function makeHtmlBundle() {
+    let templateStr = await readFile(pathToReadHtmlTemplateFiles, 'utf8');
+    const files = await readdir(pathToReadHtmlComponentsFiles);
+    const temp = [];
+
+    for await (const file of files) {
+        const text = await readFile(`${pathToReadHtmlComponentsFiles}${file}`, 'utf8');
+        const fileName = file.replace('.html', '');
+        temp.push([fileName, text]);
+    }
+
+    for (const [variableInTemplate, htmlText] of temp) {
+        templateStr = templateStr.replace(`{{${variableInTemplate}}}`, htmlText);
+    }
+
+    await writeFile(`${pathToWriteCssFiles}index.html`, templateStr);
+    console.log('The file has been saved!');
 }
 
 copyAssetsDirectory(pathToReadAssetsFiles, pathToWriteAssetsFiles);
